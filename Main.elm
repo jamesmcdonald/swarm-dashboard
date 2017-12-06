@@ -2,6 +2,8 @@ module Main exposing (..)
 
 import Navigation
 import Html exposing (..)
+import Html.Attributes exposing (placeholder)
+import Html.Events exposing (onInput)
 import Dict exposing (Dict)
 import Util exposing (..)
 import WebSocket
@@ -23,12 +25,14 @@ type alias Model =
     , swarm : Docker
     , tasks : TaskIndex
     , errors : List String
+    , pageFilter : String
     }
 
 
 type Msg
     = UrlChange Navigation.Location
     | Receive String
+    | PageFilter String
 
 
 init : Navigation.Location -> ( Model, Cmd Msg )
@@ -37,6 +41,7 @@ init location =
       , swarm = Docker.empty
       , tasks = Dict.empty
       , errors = []
+      , pageFilter = ""
       }
     , Cmd.none
     )
@@ -55,21 +60,28 @@ update msg model =
 
         UrlChange location ->
             ( model, Cmd.none )
+        PageFilter pageFilter ->
+            ( { model | pageFilter = pageFilter }, Cmd.none )
 
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
     WebSocket.listen model.webSocketUrl Receive
 
+filterServices : List Service -> String -> List Service
+filterServices service pageFilter =
+    List.filter (\s -> (String.contains pageFilter s.name)) service
+
 
 view : Model -> Html Msg
-view { swarm, tasks, errors } =
+view { swarm, tasks, errors, pageFilter } =
     let
         { services, nodes, networks } =
             swarm
     in
         div []
-            [ UI.swarmGrid services nodes networks tasks
+            [ input [ placeholder "filter", onInput PageFilter ] []
+            , UI.swarmGrid (filterServices services pageFilter) nodes networks tasks
             , ul [] (List.map (\e -> li [] [ text e ]) errors)
             ]
 
