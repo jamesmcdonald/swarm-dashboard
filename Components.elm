@@ -86,7 +86,7 @@ swarmHeader : List Node -> List Network -> String -> Html Msg
 swarmHeader nodes networks pageFilter =
     tr [] ((th [] [ img [ src "docker_logo.svg" ] []
           , br [] []
-          , input [ placeholder "filter", onInput PageFilter ] []]) ::
+          , input [ placeholder "filter", onInput PageFilter , value pageFilter] [] ]) ::
         Networks.header networks :: (nodes |> List.map node))
 
 

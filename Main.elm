@@ -9,6 +9,7 @@ import Docker.Types exposing (..)
 import Docker exposing (fromJson)
 import Components as UI
 import Messages exposing (Msg(..))
+import UrlParser exposing (..)
 
 
 localWebsocket : Navigation.Location -> String
@@ -28,16 +29,32 @@ type alias Model =
     }
 
 
+type Route = FilterRoute (Maybe String)
+
+
+route : Parser (Route -> a) a
+route =
+      UrlParser.map FilterRoute (UrlParser.s "" <?> stringParam "filter")
+
+
 init : Navigation.Location -> ( Model, Cmd Msg )
 init location =
-    ( { webSocketUrl = localWebsocket location
-      , swarm = Docker.empty
-      , tasks = Dict.empty
-      , errors = []
-      , pageFilter = ""
-      }
-    , Cmd.none
-    )
+    let
+        pageFilter =
+            case (UrlParser.parsePath route location) of
+                Just (FilterRoute (Just s)) ->
+                    s
+                _ ->
+                    ""
+    in
+        ( { webSocketUrl = localWebsocket location
+          , swarm = Docker.empty
+          , tasks = Dict.empty
+          , errors = []
+          , pageFilter = pageFilter
+          }
+        , Cmd.none
+        )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
