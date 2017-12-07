@@ -3,9 +3,11 @@ module Components exposing (..)
 import Dict exposing (Dict)
 import Html exposing (..)
 import Html.Attributes exposing (..)
+import Html.Events exposing (onInput)
 import Util exposing (..)
 import Docker.Types exposing (..)
 import Components.Networks as Networks
+import Messages exposing (Msg(..))
 
 
 statusString : String -> String -> String
@@ -80,18 +82,23 @@ node node =
             ]
 
 
-swarmHeader : List Node -> List Network -> Html msg
-swarmHeader nodes networks =
-    tr [] ((th [] [ img [ src "docker_logo.svg" ] [] ]) :: Networks.header networks :: (nodes |> List.map node))
+swarmHeader : List Node -> List Network -> String -> Html Msg
+swarmHeader nodes networks pageFilter =
+    tr [] ((th [] [ img [ src "docker_logo.svg" ] []
+          , br [] []
+          , input [ placeholder "filter", onInput PageFilter ] []]) ::
+        Networks.header networks :: (nodes |> List.map node))
 
 
-swarmGrid : List Service -> List Node -> List Network -> TaskIndex -> Html msg
-swarmGrid services nodes networks taskAllocations =
+swarmGrid : List Service -> List Node -> List Network -> TaskIndex -> String -> Html Msg
+swarmGrid services nodes networks taskAllocations pageFilter =
     let
+        filteredServices =
+            List.filter (\s -> (String.contains pageFilter s.name)) services
         networkConnections =
-            Networks.buildConnections services networks
+            Networks.buildConnections filteredServices networks
     in
         table []
-            [ thead [] [ swarmHeader nodes networks ]
-            , tbody [] (List.map (serviceRow nodes taskAllocations networkConnections) services)
+            [ thead [] [ swarmHeader nodes networks pageFilter ]
+            , tbody [] (List.map (serviceRow nodes taskAllocations networkConnections) filteredServices)
             ]
